@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Madam Bilgisayar</title>
+<meta name="description" content="Bilgisayar biliminin temellerini en basit hâliyle anlatan, etkileşimli devre araçlı ders uygulaması.">
+<script>
+(function () {
+    try {
+        var saved = localStorage.getItem("madamcs_theme");
+        var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+    }
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00aff0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Madam CS">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script defer src="js/logic.js"></script>
+<script defer src="js/widgets.js"></script>
+<script defer src="js/content/mantik.js"></script>
+<script defer src="js/content/mantik-testler.js"></script>
+<script defer src="js/app.js"></script>
+</head>
+<body>
+
+<!-- Masaüstü: sol menü -->
+<aside class="app-sidebar">
+    <a class="sidebar-logo" href="#/">
+        <span class="logo-mark" aria-hidden="true"><img src="icons/icon.svg" alt=""></span>
+        <span>Madam</span>
+    </a>
+    <nav class="sidebar-nav">
+        <a class="nav-btn" data-nav="home" href="#/"><span class="nav-icon">🏠</span> Ana Sayfa</a>
+        <a class="nav-btn" data-nav="konu" href="#/konular"><span class="nav-icon">📚</span> Konular</a>
+        <a class="nav-btn" data-nav="testler" href="#/testler"><span class="nav-icon">🎯</span> Testler</a>
+        <a class="nav-btn" data-nav="lab" href="#/lab"><span class="nav-icon">🔌</span> Mantık Lab</a>
+    </nav>
+    <div class="sidebar-progress" id="sidebarProgress"></div>
+    <div class="sidebar-foot">
+        <button class="theme-toggle-btn" type="button" data-theme-toggle title="Tema değiştir">🌙</button>
+        <span class="sidebar-foot-text">Bilgisayar Bilimi</span>
+    </div>
+</aside>
+
+<!-- Mobil: üst şerit -->
+<header class="topbar">
+    <a class="logo" href="#/">
+        <span class="logo-mark" aria-hidden="true"><img src="icons/icon.svg" alt=""></span>
+        Madam
+    </a>
+    <div class="topbar-right">
+        <button class="install-btn" type="button" data-install hidden>📲 Yükle</button>
+        <button class="theme-toggle-btn" type="button" data-theme-toggle title="Tema değiştir">🌙</button>
+    </div>
+</header>
+
+<main class="app-shell">
+    <div class="layout" id="view"></div>
+</main>
+
+<!-- Mobil: alt menü -->
+<nav class="bottom-nav">
+    <div class="bottom-nav-row">
+        <a class="bottom-nav-btn" data-nav="home" href="#/"><span class="bn-icon">🏠</span><span>Ana Sayfa</span></a>
+        <a class="bottom-nav-btn" data-nav="konu" href="#/konular"><span class="bn-icon">📚</span><span>Konular</span></a>
+        <a class="bottom-nav-btn" data-nav="testler" href="#/testler"><span class="bn-icon">🎯</span><span>Testler</span></a>
+        <a class="bottom-nav-btn" data-nav="lab" href="#/lab"><span class="bn-icon">🔌</span><span>Lab</span></a>
+    </div>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
