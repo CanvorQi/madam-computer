@@ -671,6 +671,88 @@ table.kmap th { font-size: 12.5px; color: var(--blue-deep); padding: 2px 6px; fo
 .fa-cin.on, .fa-cout.on { background: var(--green); color: #fff; }
 .fa-carry { min-width: 60px; padding-bottom: 2px; }
 
+/* Dört işlem birimi (ALU) */
+.alu-ins { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.alu-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.alu-val { margin-left: 6px; font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+.alu-bit { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 700; padding: 1px 6px; border-radius: 6px; background: var(--blue-pale); color: var(--ink-soft); }
+.alu-bit.on { background: var(--green-pale); color: var(--green); }
+.alu-lamps { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
+.alu-gap { width: 14px; }
+.alu-mul, .alu-div { font-family: 'JetBrains Mono', monospace; }
+.alu-mul td { min-width: 26px; text-align: center; }
+.alu-mul th { text-align: right; white-space: nowrap; font-family: 'Inter', sans-serif; }
+.alu-mul tr.alu-sep td { border-bottom: 2px solid var(--ink); }
+.alu-mul tr.alu-total td { font-weight: 800; }
+.alu-div td { white-space: nowrap; }
+.alu-svg .alu-dot { fill: var(--ink-soft); fill-opacity: .7; }
+.alu-svg .alu-dot.on { fill: var(--green); fill-opacity: 1; }
+.alu-svg .alu-box { fill: var(--white); stroke: var(--ink); stroke-width: 2; }
+.alu-svg .alu-box.on { fill: var(--green-pale); stroke: var(--green); }
+.alu-svg .alu-t { font-size: 11px; font-weight: 700; fill: var(--ink-soft); text-anchor: middle; }
+.alu-svg .alu-v { font-size: 14px; font-weight: 800; fill: var(--ink); text-anchor: middle; font-family: 'JetBrains Mono', monospace; }
+.lab-tabs { margin-bottom: 16px; }
+
+/* Basit bilgisayar */
+.cpu-main { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 12px; }
+@media (max-width: 1000px) { .cpu-main { grid-template-columns: 1fr; } }
+.cpu-diagram { overflow-x: auto; }
+.cpu-svg { display: block; font-family: 'Inter', sans-serif; }
+.cpu-svg .cpu-block { fill: var(--white); stroke: var(--line); stroke-width: 2; }
+.cpu-svg .cpu-block.on { stroke: var(--blue); fill: var(--blue-pale); }
+.cpu-svg .cpu-block.ctl { stroke: var(--purple); }
+.cpu-svg .cpu-title { font-size: 12.5px; font-weight: 800; fill: var(--ink); }
+.cpu-svg .cpu-desc { font-size: 10.5px; fill: var(--ink-soft); }
+.cpu-svg .cpu-val { font-size: 14px; font-weight: 800; fill: var(--ink); font-family: 'JetBrains Mono', monospace; }
+.cpu-svg .cpu-extra { fill: var(--purple); font-size: 12.5px; }
+.cpu-svg .cpu-busname { font-size: 12px; font-weight: 800; fill: var(--ink); text-anchor: middle; font-family: 'JetBrains Mono', monospace; }
+.cpu-svg .cpu-bit rect { fill: var(--blue-pale-2); stroke: var(--line); }
+.cpu-svg .cpu-bit text { font-size: 10.5px; font-weight: 700; text-anchor: middle; fill: var(--ink-soft); font-family: 'JetBrains Mono', monospace; }
+.cpu-svg .cpu-bit.on rect { fill: var(--green); stroke: var(--green); }
+.cpu-svg .cpu-bit.on text { fill: #fff; }
+.cpu-svg .cpu-sig rect { fill: var(--blue-pale-2); stroke: var(--line); }
+.cpu-svg .cpu-sig text { font-size: 10px; font-weight: 800; text-anchor: middle; fill: var(--ink-soft); font-family: 'JetBrains Mono', monospace; }
+.cpu-svg .cpu-sig.on rect { fill: var(--purple); stroke: var(--purple); }
+.cpu-svg .cpu-sig.on text { fill: #fff; }
+.cpu-svg .cpu-link { stroke: var(--line); stroke-width: 3; }
+.cpu-svg .cpu-link.out { stroke: var(--green); stroke-width: 4; }
+.cpu-svg .cpu-link.in { stroke: var(--blue); stroke-width: 4; }
+.cpu-svg .cpu-ah.out { fill: var(--green); }
+.cpu-svg .cpu-ah.in { fill: var(--blue); }
+.cpu-svg .cpu-int { stroke: var(--ink-soft); stroke-width: 2; stroke-dasharray: 3 3; }
+.cpu-mem { font-size: 13px; }
+.cpu-mem td, .cpu-mem th { padding: 3px 6px; white-space: nowrap; }
+.cpu-mem tr.pc td { background: var(--blue-pale); }
+.cpu-mem tr.mar td:first-child { box-shadow: inset 3px 0 0 var(--purple); }
+.cpu-mcell { display: flex; gap: 2px; }
+.cpu-mbit {
+    width: 17px; height: 20px; padding: 0; border-radius: 4px; border: 1px solid var(--line); background: var(--white); cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--ink-soft);
+}
+.cpu-mbit.gap { margin-right: 5px; }
+.cpu-mbit.on { background: var(--green); border-color: var(--green); color: #fff; }
+.cpu-tag { color: var(--purple); font-weight: 800; font-size: 12px; }
+.cpu-outrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.cpu-outlbl { font-weight: 800; font-size: 12px; color: var(--ink-soft); letter-spacing: .5px; }
+.cpu-out { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 800; color: var(--green); min-width: 60px; padding: 2px 12px; border-radius: 10px; background: #0f1b24; text-align: center; }
+.cpu-lamps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cpu-svg .cpu-part { cursor: pointer; }
+.cpu-svg .cpu-hit { fill: transparent; }
+.cpu-svg .cpu-part:hover .cpu-block { stroke: var(--blue); }
+.cpu-svg .cpu-part.sel .cpu-block { stroke: var(--purple); stroke-width: 3.5; }
+.cpu-svg .cpu-part.sel .cpu-hit { fill: var(--purple); fill-opacity: .08; }
+.cpu-card { border: 2px solid var(--purple); border-radius: 14px; padding: 14px 16px; background: var(--white); }
+.cpu-card h3 { margin: 0 0 6px; font-family: 'Sora', sans-serif; font-size: 17px; color: var(--blue-deep); }
+.cpu-card p { margin: 0 0 10px; line-height: 1.55; }
+.cpu-now { background: var(--green-pale); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; line-height: 1.55; }
+.cpu-now-lbl { display: inline-block; background: var(--green); color: #fff; font-weight: 800; font-size: 11.5px; border-radius: 6px; padding: 1px 7px; margin-right: 4px; }
+.cpu-sigrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.cpu-pill { display: inline-block; font-size: 12.5px; border-radius: 8px; padding: 2px 8px; background: var(--blue-pale-2); color: var(--ink-soft); }
+.cpu-pill b { font-family: 'JetBrains Mono', monospace; }
+.cpu-pill.on { background: var(--purple); color: #fff; }
+.cpu-steps td { vertical-align: middle; }
+.cpu-steps tr.cpu-cur td { background: var(--green-pale); }
+
 /* Flip-flop ve sayaç */
 .ff-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
 .ff-controls .switch-row { margin: 0; }

@@ -530,7 +530,22 @@
 
     function pageLab() {
         return `
-        <div class="lab">
+        <div class="chip-row lab-tabs">
+            <button type="button" class="chip" data-labtab="bool">🔣 Boole ifadesi</button>
+            <button type="button" class="chip" data-labtab="alu">🧮 Dört işlem</button>
+            <button type="button" class="chip" data-labtab="cpu">🖥️ Basit bilgisayar</button>
+        </div>
+        <div class="card" data-labpane="cpu" hidden>
+            <h2 style="margin:0 0 4px;font-size:19px">Basit Bilgisayar</h2>
+            <p class="muted" style="margin:0 0 8px">8 bitlik, 16 bayt bellekli küçük bir işlemci. Her parçası flip-floplardan ve mantık kapılarından oluşur. Saat darbesi ver, verinin bus üzerinden yazmaçlar arasında nasıl taşındığını adım adım izle.</p>
+            <div data-cpu></div>
+        </div>
+        <div class="card" data-labpane="alu" hidden>
+            <h2 style="margin:0 0 4px;font-size:19px">Dört İşlem Birimi</h2>
+            <p class="muted" style="margin:0 0 8px">Toplama, çıkarma, çarpma ve bölme yalnızca AND, OR, XOR ve NOT kapılarıyla. Bitlere dokun, devrenin tellerinde değerlerin nasıl aktığını izle.</p>
+            <div data-alu></div>
+        </div>
+        <div class="lab" data-labpane="bool">
             <div class="card lab-panel">
                 <h2 style="margin:0;font-size:19px">Mantık Lab</h2>
                 <label class="ctrl"><span class="ctrl-label"><span>F = (Boole ifadesi)</span></span>
@@ -572,6 +587,21 @@
             } catch (e) { /* bozuk bağlantı: kayıtlı değerlerle devam */ }
             history.replaceState(null, "", "#/lab");
         }
+        const TABS = ["bool", "alu", "cpu"];
+        let tab = TABS.includes(query.get("m")) ? query.get("m") : fromLink ? "bool" : store.get("madamcs_labtab", "bool");
+        if (!TABS.includes(tab)) tab = "bool";
+        if (query.get("m")) history.replaceState(null, "", "#/lab");
+        const ready = {};
+        function showTab() {
+            view.querySelectorAll("[data-labtab]").forEach((b) => b.classList.toggle("active", b.dataset.labtab === tab));
+            view.querySelectorAll("[data-labpane]").forEach((p) => (p.hidden = p.dataset.labpane !== tab));
+            if (ready[tab]) return;
+            ready[tab] = true;
+            if (tab === "alu") Widgets.alu(view.querySelector("[data-alu]"), { bits: 4, a: 13, b: 3, schematic: true });
+            if (tab === "cpu") Widgets.cpu(view.querySelector("[data-cpu]"), {});
+        }
+        view.querySelectorAll("[data-labtab]").forEach((b) => b.addEventListener("click", () => { tab = b.dataset.labtab; store.set("madamcs_labtab", tab); showTab(); }));
+        showTab();
         const inF = view.querySelector("[data-f]"), inG = view.querySelector("[data-g]"), inD = view.querySelector("[data-dc]");
         const out = view.querySelector("#labOut");
         inF.value = st.f; inG.value = st.g; inD.value = st.dc;

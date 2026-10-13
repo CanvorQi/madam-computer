@@ -558,6 +558,26 @@
                     ],
                 },
                 {
+                    id: "dort-islem", title: "Kapılarla Dört İşlem",
+                    summary: "Toplama, çıkarma, çarpma ve bölme devreleri.",
+                    blocks: [
+                        simple(R`İşlemcinin içindeki <b>aritmetik mantık birimi</b> (ALU) dört işlemi de yalnızca mantık kapılarıyla yapar. İşin sırrı şu: hepsi <b>toplayıcıya</b> dayanır. Çıkarma, tersleyip toplamaktır; çarpma, kaydırıp toplamaktır; bölme ise tekrar tekrar çıkarmaktır.`),
+                        def("Çıkarma", R`$$A - B = A + \overline{B} + 1$$
+                            $B$'nin bitleri XOR kapılarıyla terslenir, toplayıcının ilk eldesine $1$ verilir (ikiye tümleyen). Son elde $C_{out} = 0$ ise sonuç negatiftir.`),
+                        def("Çarpma", R`İkili çarpım tablosu tek bir AND kapısıdır: $a \cdot b$. $A$'nın bitleri $B$'nin her bitiyle AND'lenir (<b>kısmi çarpımlar</b>), her satır bir basamak sola kaydırılır ve satırlar toplayıcılarla toplanır. $n$ bitlik iki sayının çarpımı $2n$ bite kadar çıkar.`),
+                        def("Bölme", R`Uzun bölmenin aynısı: $A$'nın bitleri soldan birer birer kalana indirilir; kalan $\ge B$ ise $B$ çıkarılır ve bölüm biti $1$ olur, değilse bölüm biti $0$ olur ve kalan korunur. Sonunda $A = B \cdot Q + R$.`),
+                        widget("alu", "Dört işlem birimi", "İşlemi seç, A ve B'nin bitlerine dokun. Sonucun hangi kapılardan geçerek hesaplandığını ve kaç kapı çalıştığını gör.", { bits: 4, a: 13, b: 3 }),
+                        tip(R`Devrenin kapı kapı çizilmiş hâlini görmek için: <a href="#/lab?m=alu">Mantık Lab'da aç ›</a>`),
+                        ex(R`$(0110)_2 \times (0011)_2$ çarpımını kısmi çarpımlarla bulunuz.`, [
+                            R`$B_0 = 1$ → $0110$; $B_1 = 1$ → bir sola kaydırılmış $0110$, yani $01100$.`,
+                            R`$B_2 = B_3 = 0$ → kısmi çarpımlar $0$.`,
+                            R`$0110 + 01100 = 10010$.`,
+                        ], R`$(10010)_2 = 18$. Kontrol: $6 \times 3 = 18$ ✓`),
+                        quiz(R`4 bitlik bir çıkarıcıda $B$'nin bitlerini terslemek için hangi kapı “kontrollü tersleyici” olarak kullanılır?`, ["XOR", "AND", "OR", "NAND"], 0, R`$B \oplus 1 = \overline{B}$, $B \oplus 0 = B$: aynı devre hem toplar hem çıkarır.`),
+                        quiz(R`4 bitlik iki sayının kısmi çarpımları için kaç AND kapısı gerekir?`, ["16", "8", "4", "32"], 0, R`Her $A_i$, her $B_j$ ile AND'lenir: $4 \times 4 = 16$.`),
+                    ],
+                },
+                {
                     id: "mux-decoder", title: "Çoklayıcı (MUX) ve Kod Çözücü",
                     summary: "Seçici anahtarlar ve adres çözümü.",
                     blocks: [
@@ -640,7 +660,7 @@
         title: "Bilgisayar Bilimi",
         source: "Bilgisayar biliminin temel konuları",
         chapters: [
-            { no: 1, title: "Mantık, Boole Cebiri ve Sayısal Devreler", sub: "6 alt konu · 19 ders", id: "mantik" },
+            { no: 1, title: "Mantık, Boole Cebiri ve Sayısal Devreler", sub: "6 alt konu · 20 ders", id: "mantik" },
             { no: 2, title: "Sayı Sistemleri ve Veri Gösterimi", sub: "İkili, onaltılık, tümleyen, kayan nokta" },
             { no: 3, title: "Algoritmalar", sub: "Akış şemaları, karmaşıklık, sıralama" },
             { no: 4, title: "Programlamaya Giriş", sub: "Değişkenler, koşullar, döngüler" },

@@ -374,6 +374,229 @@
         build();
     };
 
+    /* ---------------- Dört işlem birimi (yalnızca kapılarla) ---------------- */
+    W.alu = function (root, o) {
+        const n = o.bits || 4;
+        let op = o.op || 0, A = o.a !== undefined ? o.a : 13, B = o.b !== undefined ? o.b : 3;
+        const OPS = [["+", "Toplama"], ["−", "Çıkarma"], ["×", "Çarpma"], ["÷", "Bölme"]];
+        chips(root, OPS.map((x) => `${x[0]} ${x[1]}`), op, (i) => { op = i; build(); });
+        const ins = el(`<div class="alu-ins"></div>`), stage = el(`<div class="alu-stage"></div>`), info = el(`<div class="readout"></div>`);
+        const sch = el(`<div class="alu-sch"></div>`);
+        [ins, stage, info].concat(o.schematic ? [sch] : []).forEach((x) => root.appendChild(x));
+
+        // Her işlem bu dört kapıdan geçer; kaç kapı kullanıldığını sayıyoruz
+        let cnt;
+        const AND = (a, b) => (cnt.and++, a & b);
+        const OR = (a, b) => (cnt.or++, a | b);
+        const XOR = (a, b) => (cnt.xor++, a ^ b);
+        const NOT = (a) => (cnt.not++, 1 - a);
+        const bitsOf = (v, w) => Array.from({ length: w }, (_, i) => (v >> i) & 1);
+        const numOf = (bits) => bits.reduce((s, b, i) => s + (b << i), 0);
+        const binOf = (bits) => bits.slice().reverse().join("");
+        const fullAdd = (a, b, c) => { const p = XOR(a, b); return { s: XOR(p, c), c: OR(AND(a, b), AND(c, p)) }; };
+        function addBits(x, y, cin) {
+            const s = [], cs = [cin];
+            x.forEach((xi, i) => { const r = fullAdd(xi, y[i], cs[i]); s.push(r.s); cs.push(r.c); });
+            return { s, cs };
+        }
+        // A − B = A + B̅ + 1: B'nin bitleri XOR ile terslenir, ilk elde 1 yapılır
+        function subBits(x, y) {
+            const yn = y.map((b) => XOR(b, 1));
+            return Object.assign(addBits(x, yn, 1), { yn });
+        }
+
+        const bitBtn = (name, v, i, key) => `<button type="button" class="bit-switch small${(v >> i) & 1 ? " on" : ""}" data-${key}="${i}"><span class="bs-name">${name}<sub>${i}</sub></span><span class="bs-val">${(v >> i) & 1}</span></button>`;
+        const gateLine = () => [["AND", cnt.and], ["OR", cnt.or], ["XOR", cnt.xor], ["NOT", cnt.not]].filter((g) => g[1]).map((g) => `${g[1]} ${g[0]}`).join(" · ");
+
+        function rippleHtml(x, y, r, yLabel) {
+            const cols = [];
+            for (let i = n - 1; i >= 0; i--) {
+                cols.push(`<div class="fa-col">
+                    <span class="alu-bit">A<sub>${i}</sub>=${x[i]}</span>
+                    <span class="alu-bit${y[i] ? " on" : ""}">${yLabel}<sub>${i}</sub>=${y[i]}</span>
+                    <div class="fa-box"><span class="fa-cout${r.cs[i + 1] ? " on" : ""}" title="Elde çıkışı">${r.cs[i + 1]}</span>TT<span class="fa-cin${r.cs[i] ? " on" : ""}" title="Elde girişi">${r.cs[i]}</span></div>
+                    ${lamp(r.s[i], `S<sub>${i}</sub>`)}
+                </div>`);
+            }
+            return `<div class="ripple"><div class="fa-col fa-carry">${lamp(r.cs[n], "C<sub>out</sub>")}</div>${cols.join("")}</div>`;
+        }
+
+        // ---- Kapı düzeyinde şemalar (Lab'da görünür) ----
+        const svgSub = (s, i) => `${s}<tspan font-size="9" dy="3">${i}</tspan>`;
+        const wire = (on, d) => `<path class="lc-wire${on ? " on" : ""}" d="${d}"/>`;
+        const dot = (on, x, y) => `<circle class="alu-dot${on ? " on" : ""}" cx="${x}" cy="${y}" r="3"/>`;
+        const gateG = (kind, x, y, on) => {
+            const g = L.gatePath(kind, x, y, 54, 36);
+            return `<g class="lc-gate${on ? " on" : ""}">${g.extra}<path class="lc-body" d="${g.d}"/>${g.bub}<text class="lc-glabel" x="${x + (kind === "and" ? 21 : 25)}" y="${y + 3.5}">${kind.toUpperCase()}</text></g>`;
+        };
+        const pinIn = (x, y, label, on) => `<g class="lc-in${on ? " on" : ""}"><rect x="${x}" y="${y - 11}" width="36" height="22" rx="7"/><text x="${x + 18}" y="${y + 4.5}">${label}</text><circle cx="${x + 40}" cy="${y}" r="4"/></g>`;
+        const pinOut = (x, y, label, on) => `<g class="lc-out${on ? " on" : ""}"><circle cx="${x + 10}" cy="${y}" r="9"/><text x="${x + 10}" y="${y + 4}">${on}</text><text class="lc-outname" x="${x + 34}" y="${y + 4}">${label}</text></g>`;
+        const svgWrap = (w, h, body, aria) => `<svg class="lc-svg alu-svg" viewBox="0 0 ${w} ${h}" width="${w}" style="max-width:100%;height:auto" role="img" aria-label="${aria}">${body}</svg>`;
+
+        // Toplayıcı/çıkarıcı: her satır bir bit; B, SUB ile XOR'lanır, sonra tam toplayıcı (2 XOR, 2 AND, 1 OR)
+        function addSvg(a, b, sub) {
+            const RH = 140, W = 570, H = 40 + n * RH;
+            const w = [], g = [], io = [];
+            let c = sub;
+            io.push(`<g class="lc-in${sub ? " on" : ""}"><rect x="34" y="2" width="48" height="22" rx="7"/><text x="58" y="17.5">SUB</text></g>`);
+            w.push(wire(sub, `M58 24 V${H - 20}`), wire(sub, `M58 30 H290 V40`));
+            for (let i = 0; i < n; i++) {
+                const r = 40 + i * RH, yA = r + 20, yB = r + 50;
+                const bp = b[i] ^ sub, p = a[i] ^ bp, s = p ^ c, g1 = a[i] & bp, g2 = c & p, co = g1 | g2;
+                io.push(pinIn(4, yA, svgSub("A", i), a[i]), pinIn(4, yB, svgSub("B", i), b[i]));
+                w.push(wire(b[i], `M44 ${yB} H87`), wire(sub, `M58 ${yB + 18} H87`), dot(sub, 58, yB + 18));
+                g.push(gateG("xor", 78, yB + 9, bp));
+                w.push(wire(a[i], `M44 ${yA} H150 V${r + 29} H199`), wire(a[i], `M150 ${r + 29} V${r + 99} H199`), dot(a[i], 150, r + 29));
+                w.push(wire(bp, `M132 ${yB + 9} H165 V${r + 47} H199`), wire(bp, `M165 ${r + 47} V${r + 117} H199`), dot(bp, 165, r + 47));
+                g.push(gateG("xor", 190, r + 38, p), gateG("and", 190, r + 108, g1));
+                w.push(wire(p, `M244 ${r + 38} H270 V${r + 29} H319`), wire(p, `M270 ${r + 38} V${r + 89} H319`), dot(p, 270, r + 38));
+                w.push(wire(c, `M290 ${r} V${r + 47} H319`), wire(c, `M290 ${r + 47} V${r + 71} H319`), dot(c, 290, r + 47));
+                g.push(gateG("xor", 310, r + 38, s), gateG("and", 310, r + 80, g2));
+                w.push(wire(g1, `M244 ${r + 108} H395 V${r + 104} H429`), wire(g2, `M364 ${r + 80} H385 V${r + 86} H429`));
+                g.push(gateG("or", 420, r + 95, co));
+                w.push(wire(s, `M364 ${r + 38} H500`));
+                io.push(pinOut(500, r + 38, svgSub("S", i), s));
+                if (i < n - 1) w.push(wire(co, `M474 ${r + 95} H492 V${r + 134} H290 V${r + RH}`));
+                else { w.push(wire(co, `M474 ${r + 95} H500`)); io.push(pinOut(500, r + 95, svgSub("C", n), co)); }
+                c = co;
+            }
+            return svgWrap(W, H, w.join("") + g.join("") + io.join(""), "Toplayıcı/çıkarıcı devresi");
+        }
+
+        // Çarpıcı: kısmi çarpımları üreten AND kapısı dizisi
+        function mulSvg(a, b) {
+            const CW = 120, RH = 80, W = 70 + n * CW, H = 70 + n * RH;
+            const w = [], g = [], io = [];
+            for (let k = 0; k < n; k++) {
+                const i = n - 1 - k, x = 70 + k * CW;
+                io.push(`<g class="lc-in${a[i] ? " on" : ""}"><rect x="${x - 18}" y="2" width="36" height="22" rx="7"/><text x="${x}" y="17.5">${svgSub("A", i)}</text></g>`);
+                w.push(wire(a[i], `M${x} 24 V${H - 30}`));
+            }
+            for (let j = 0; j < n; j++) {
+                const rowY = 50 + j * RH, gy = rowY + 32;
+                io.push(pinIn(4, rowY, svgSub("B", j), b[j]));
+                w.push(wire(b[j], `M44 ${rowY} H${W - 10}`));
+                for (let k = 0; k < n; k++) {
+                    const i = n - 1 - k, x = 70 + k * CW, gx = x + 24, v = a[i] & b[j];
+                    w.push(wire(a[i], `M${x} ${gy + 9} H${gx + 9}`), dot(a[i], x, gy + 9));
+                    w.push(wire(b[j], `M${x + 12} ${rowY} V${gy - 9} H${gx + 9}`), dot(b[j], x + 12, rowY));
+                    g.push(gateG("and", gx, gy, v));
+                    w.push(wire(v, `M${gx + 54} ${gy} H${gx + 62}`));
+                    io.push(`<g class="lc-out${v ? " on" : ""}"><circle cx="${gx + 71}" cy="${gy}" r="9"/><text x="${gx + 71}" y="${gy + 4}">${v}</text><text class="lc-outname" x="${gx + 71}" y="${gy + 24}">2${`<tspan font-size="8" dy="-5">${i + j}</tspan>`}</text></g>`);
+                }
+            }
+            return svgWrap(W, H, w.join("") + g.join("") + io.join(""), "Çarpıcının AND kapısı dizisi");
+        }
+
+        // Bölücü: her adımda kaydır → çıkar → MUX ile seç
+        function divSvg(steps) {
+            const RH = 96, W = 650, H = 10 + n * RH;
+            const parts = [];
+            const box = (x, y, bw, on, t, v) => `<rect class="alu-box${on ? " on" : ""}" x="${x}" y="${y}" width="${bw}" height="60" rx="9"/>
+                <text class="alu-t" x="${x + bw / 2}" y="${y + 23}">${t}</text><text class="alu-v" x="${x + bw / 2}" y="${y + 44}">${v}</text>`;
+            steps.forEach((s, k) => {
+                const y0 = 10 + k * RH, cy = y0 + 30, q = s.q;
+                parts.push(wire(1, `M150 ${y0 + 18} H190`), wire(q, `M340 ${y0 + 18} H380`), wire(!q, `M80 ${y0 + 60} V${y0 + 80} H366 V${y0 + 46} H380`));
+                parts.push(wire(q, `M265 ${y0 + 60} V${y0 + 68} H600 V${cy}`), wire(q, `M400 ${y0 + 68} V${y0 + 54}`), dot(q, 400, y0 + 68));
+                parts.push(wire(1, `M420 ${cy} H450`));
+                if (k < steps.length - 1) parts.push(wire(1, `M515 ${y0 + 60} V${y0 + 88} H40 V${y0 + RH}`));
+                parts.push(box(10, y0, 140, 0, `Kalan ≪ 1, A${s.i}`, `${binOf(s.shifted)} = ${numOf(s.shifted)}`));
+                parts.push(box(190, y0, 150, q, "Çıkarıcı: kalan − B", q ? `${binOf(s.d)} = ${numOf(s.d)}` : "borç → negatif"));
+                parts.push(`<path class="alu-box${q ? " on" : ""}" d="M380 ${y0} L420 ${y0 + 12} L420 ${y0 + 48} L380 ${y0 + 60} Z"/>
+                    <text class="alu-t" x="400" y="${cy + 4}">MUX</text><text class="alu-t" x="388" y="${y0 + 22}">1</text><text class="alu-t" x="388" y="${y0 + 50}">0</text>`);
+                parts.push(box(450, y0, 130, 0, "Yeni kalan", `${binOf(s.rem)} = ${numOf(s.rem)}`));
+                parts.push(`<g class="lc-out${q ? " on" : ""}"><circle cx="610" cy="${cy}" r="9"/><text x="610" y="${cy + 4}">${q}</text><text class="lc-outname" x="610" y="${cy - 14}">${svgSub("Q", s.i)}</text></g>`);
+            });
+            return svgWrap(W, H, parts.join(""), "Bölücü adımları");
+        }
+
+        const schCard = (title, svg, note) => `<div class="section-title" style="margin:16px 0 6px">${title}</div><div class="circuit-stage">${svg}</div><p class="muted" style="font-size:13px;margin:6px 0 0">${note}</p>`;
+
+        function build() {
+            cnt = { and: 0, or: 0, xor: 0, not: 0 };
+            const rowA = [], rowB = [];
+            for (let i = n - 1; i >= 0; i--) { rowA.push(bitBtn("A", A, i, "a")); rowB.push(bitBtn("B", B, i, "b")); }
+            ins.innerHTML = `<div class="alu-row">${rowA.join("")}<span class="alu-val">A = <b>${A}</b></span></div>
+                <div class="alu-row">${rowB.join("")}<span class="alu-val">B = <b>${B}</b></span></div>`;
+            ins.querySelectorAll("[data-a]").forEach((b) => b.addEventListener("click", () => { A ^= 1 << Number(b.dataset.a); build(); }));
+            ins.querySelectorAll("[data-b]").forEach((b) => b.addEventListener("click", () => { B ^= 1 << Number(b.dataset.b); build(); }));
+            const a = bitsOf(A, n), b = bitsOf(B, n);
+            let head = "", note = "";
+
+            if (op === 0) {
+                const r = addBits(a, b, 0), res = numOf(r.s.concat([r.cs[n]]));
+                stage.innerHTML = rippleHtml(a, b, r, "B");
+                sch.innerHTML = schCard("Kapı düzeyinde devre: 4 bitlik toplayıcı", addSvg(a, b, 0), "SUB = 0 olduğundan soldaki XOR kapıları B'yi olduğu gibi geçirir. Her satır bir tam toplayıcıdır; OR kapısından çıkan elde bir alttaki satıra iner.");
+                head = `${A} + ${B} = (${r.cs[n]}${binOf(r.s)})<sub>2</sub> = <b>${res}</b>`;
+                note = `${n} tam toplayıcı zinciri. Her TT: S = A ⊕ B ⊕ C<sub>in</sub>, C<sub>out</sub> = AB + C<sub>in</sub>(A ⊕ B).${r.cs[n] ? ` Sonuç ${n} bite sığmadı; taşan bit C<sub>out</sub>'ta.` : ""}`;
+            } else if (op === 1) {
+                const r = subBits(a, b), raw = numOf(r.s), neg = !r.cs[n];
+                stage.innerHTML = rippleHtml(a, r.yn, r, "B̅");
+                sch.innerHTML = schCard("Kapı düzeyinde devre: aynı devre, SUB = 1", addSvg(a, b, 1), "SUB = 1 iken soldaki XOR kapıları B'nin her bitini tersler, aynı SUB teli ilk eldeye de 1 verir: A + B̅ + 1.");
+                head = `${A} − ${B} = (${binOf(r.s)})<sub>2</sub> = <b>${neg ? raw - (1 << n) : raw}</b>`;
+                note = `Çıkarma da aynı toplayıcıyla yapılır: <b>A − B = A + B̅ + 1</b>. B'nin her biti bir XOR kapısıyla terslendi (B̅), en sağdaki eldeye 1 verildi.
+                    ${neg ? `C<sub>out</sub> = 0 → <b>borç var</b>, sonuç negatif. (${binOf(r.s)})<sub>2</sub> ikiye tümleyen gösterimde ${raw - (1 << n)} demektir.` : `C<sub>out</sub> = 1 → borç yok, A ≥ B.`}`;
+            } else if (op === 2) {
+                // Dizi çarpıcı: kısmi çarpımlar AND kapılarıyla, toplamları tam toplayıcılarla
+                const w = 2 * n, rows = [];
+                let acc = new Array(w).fill(0);
+                for (let i = 0; i < n; i++) {
+                    const pp = a.map((ai) => AND(ai, b[i]));
+                    rows.push(pp);
+                    if (i === 0) { pp.forEach((v, k) => (acc[k] = v)); continue; }
+                    const r = addBits(acc.slice(i, i + n), pp, 0);
+                    r.s.forEach((v, k) => (acc[i + k] = v));
+                    acc[i + n] = r.cs[n];
+                }
+                const P = numOf(acc);
+                const cell = (v, cls) => `<td class="${cls || ""}${v === "" ? "" : v ? " one" : " zero"}">${v}</td>`;
+                let h = `<table class="mtable alu-mul"><tbody>`;
+                const line = (label, bits, shift, cls) => `<tr class="${cls || ""}"><th>${label}</th>${Array.from({ length: w }, (_, k) => {
+                    const j = w - 1 - k - shift;
+                    return cell(j >= 0 && j < bits.length ? bits[j] : "");
+                }).join("")}</tr>`;
+                h += line("A", a, 0) + line("× B", b, 0, "alu-sep");
+                rows.forEach((pp, i) => (h += line(`A·B<sub>${i}</sub>`, pp, i, i === n - 1 ? "alu-sep" : "")));
+                h += line("Çarpım", acc, 0, "alu-total");
+                stage.innerHTML = `<div class="table-wrap">${h}</tbody></table></div>
+                    <div class="alu-lamps">${acc.slice().reverse().map((v, k) => lamp(v, `P<sub>${w - 1 - k}</sub>`)).join("")}</div>`;
+                sch.innerHTML = schCard("Kapı düzeyinde devre: AND dizisi", mulSvg(a, b), `Her kesişimde bir AND kapısı A<sub>i</sub>·B<sub>j</sub> kısmi çarpım bitini üretir; altındaki 2<sup>i+j</sup> o bitin basamak değeridir. Bu ${n * n} bit, yukarıdaki tablodaki gibi kaydırılıp toplayıcılarla toplanır.`);
+                head = `${A} × ${B} =(${binOf(acc)})<sub>2</sub> = <b>${P}</b>`;
+                note = `Her kısmi çarpım satırı, A'nın bitleri ile B'nin bir bitinin <b>AND</b>'idir (${n}×${n} = ${n * n} AND kapısı). Satırlar birer basamak sola kaydırılıp toplayıcılarla toplanır. Sonuç ${w} bite kadar çıkabilir.`;
+            } else {
+                if (!B) {
+                    stage.innerHTML = "";
+                    sch.innerHTML = "";
+                    info.innerHTML = `<span class="bad">Sıfıra bölme tanımsız!</span> B'ye en az bir tane 1 biti ver.`;
+                    return;
+                }
+                // Geri yüklemeli bölme: her adımda kalanı kaydır, B'yi çıkar; borç yoksa bölüm biti 1
+                let rem = new Array(n + 1).fill(0);
+                const bx = b.concat([0]), q = new Array(n).fill(0), steps = [];
+                for (let i = n - 1; i >= 0; i--) {
+                    rem = [a[i]].concat(rem.slice(0, n));
+                    const shifted = rem.slice();
+                    const d = subBits(rem, bx);
+                    q[i] = d.cs[n + 1];
+                    const nq = NOT(q[i]);
+                    rem = rem.map((rv, k) => OR(AND(q[i], d.s[k]), AND(nq, rv)));
+                    steps.push({ i, shifted, q: q[i], rem: rem.slice(), d: d.s });
+                }
+                const Q = numOf(q), Rm = numOf(rem);
+                stage.innerHTML = `<div class="table-wrap"><table class="mtable alu-div"><thead><tr><th>Adım</th><th>Kalan (A<sub>i</sub> eklendi)</th><th>Kalan ≥ B?</th><th>Bölüm biti</th><th>Yeni kalan</th></tr></thead><tbody>
+                    ${steps.map((s) => `<tr><td>${n - s.i}</td><td class="mono">${binOf(s.shifted)} = ${numOf(s.shifted)}</td><td>${s.q ? `<span class="good">evet</span>, ${B} çıkar` : `<span class="bad">hayır</span>, aynen kalsın`}</td><td class="${s.q ? "one" : "zero"}">Q<sub>${s.i}</sub> = ${s.q}</td><td class="mono">${binOf(s.rem)} = ${numOf(s.rem)}</td></tr>`).join("")}
+                    </tbody></table></div>
+                    <div class="alu-lamps">${q.slice().reverse().map((v, k) => lamp(v, `Q<sub>${n - 1 - k}</sub>`)).join("")}<span class="alu-gap"></span>${rem.slice(0, n).reverse().map((v, k) => lamp(v, `R<sub>${n - 1 - k}</sub>`)).join("")}</div>`;
+                sch.innerHTML = schCard("Blok devre: geri yüklemeli bölücü", divSvg(steps), "Her satır bir adım. Çıkarıcıda borç yoksa (Q = 1) MUX farkı seçer, borç varsa (Q = 0) alttan dolaşan eski kalanı seçer. Yeşil yollar o adımda kullanılan yollardır.");
+                head = `${A} ÷ ${B} →bölüm (${binOf(q)})<sub>2</sub> = <b>${Q}</b>, kalan <b>${Rm}</b> &nbsp;·&nbsp; kontrol: ${B} × ${Q} + ${Rm} = ${B * Q + Rm}`;
+                note = `Kâğıt üzerindeki uzun bölmenin aynısı: A'nın bitleri soldan birer birer kalana indirilir, kalandan B çıkarılır (A + B̅ + 1). Çıkarmada borç yoksa bölüm biti 1 olur ve fark yeni kalan olur; borç varsa bir MUX (AND-OR-NOT) eski kalanı korur.`;
+            }
+            info.innerHTML = `${head}<div class="muted" style="font-size:13px;margin-top:4px">${note}</div>
+                <div style="font-size:13px;margin-top:6px">🔌 Bu işlem için çalışan kapılar: <b>${gateLine() || "—"}</b></div>`;
+        }
+        build();
+    };
+
     /* ---------------- Flip-floplar ---------------- */
     const FF = {
         SR: { title: "SR mandal (latch)", ins: ["S", "R"], clocked: false,

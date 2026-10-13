@@ -5,7 +5,7 @@
  * Dosyaları değiştirdikten sonra CACHE_NAME sürümünü artır ki kullanıcılar yeni sürümü alsın.
  */
 const CACHE_PREFIX = "madam-cs-";
-const CACHE_NAME = CACHE_PREFIX + "v1";
+const CACHE_NAME = CACHE_PREFIX + "v4";
 const APP_SHELL = [
     "./",
     "./index.html",
@@ -13,6 +13,7 @@ const APP_SHELL = [
     "./css/style.css",
     "./js/logic.js",
     "./js/widgets.js",
+    "./js/cpu.js",
     "./js/content/mantik.js",
     "./js/content/mantik-testler.js",
     "./js/app.js",

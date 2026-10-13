@@ -418,6 +418,6 @@
     global.Logic = {
         tokenize, parse, evaluate, compile, envOf, table, subterms, format, varsOf, sortVars,
         primeImplicants, minimize, termAst, sopAst, posAst, simplify, kmapLayout, bin, popcount, covers,
-        circuitSvg, V, NOT, chain, BINARY,
+        circuitSvg, gatePath, V, NOT, chain, BINARY,
     };
 })(window);
